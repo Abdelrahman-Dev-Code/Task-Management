@@ -1,0 +1,52 @@
+
+Route : is
+RestFull Api:
+Api:
+
+HTTP Method
+ 1- GET :
+ 2-POST:
+ 3-PUT:
+ 4-PATCH:
+ 5-DELETE:
+
+
+ Route in Laravel
+    * roles: Route::Method();
+        Route::get($url,callBack) ->
+                                    name(name);
+                                    where(para,mm);
+                                    whereNumber();
+        Route::post($url,callBack);
+        Route::put($url,callBack);
+        Route::DELETE($url,callBack);
+        Route::PATCH($url,callBack);
+        Route::any($url,callBack);
+        Route::match($url,callBack);
+        Route::match($url,callBack);
+        Rote::prefix(prefix)->group(callBack);
+        Rote::name(prefix)->group(callBack);
+        Rote::middleware(prefix)->group(callBack);
+         Route::resource(url,callBackControloer)->
+                                                   only(...);
+                                                   expit(...);
+
+========================= ==========================================
+
+========================= ==========================================
+  // Route::prefix('Tasks')->group(
+            //     function () {
+            //         Route::get('tasks', [TaskController::class, 'index']);
+            //         Route::get('tasks/{id}', [TaskController::class, 'show'])->where('id', '[1-9]+');
+            //         Route::post('tasks', [TaskController::class, 'store']);
+            //         Route::put('tasks/{id}', [TaskController::class, 'update'])->whereNumber('id');
+            //         Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
+            //     }
+            // );
+
+        Route::any('all', [TaskController::class, 'index']);
+        Route::match(['post', 'get'], 'all', [TaskController::class, 'index']);
+        
+    ===============================================================================
+
+     ===============================================================================

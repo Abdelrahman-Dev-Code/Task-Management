@@ -1,97 +1,84 @@
 <?php
 
+/**
+ * File Name: TaskController.php
+* Description:
+ * Developer: Abdelrahman-Dev-Code
+ * Created Date: 2026-08-16
+ * Last Modified: 2026-08-16
+ */
+
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreRequestTask;
 use App\Models\Task;
-
-
-
-namespace App\Http\Controllers;
-
-
-use App\Models\Task;
-use GuzzleHttp\Psr7\Response;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 
 class TaskController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): JsonResponse
     {
         $tasks = Task::all();
-        return response()->json(['data '=>$tasks,200]);
+
+        return response()->json([
+            'data' => $tasks,
+        ], 200);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
+    public function show($id): JsonResponse
     {
         $task = Task::find($id);
-        if ($task == null) {
-            return response()->json(['message' => 'not found'], 404);
+
+        if (! $task) {
+            return response()->json(['message' => 'Task not found'], 404);
         }
 
-        return  response()->json(['data' => $task], 200);
+        return response()->json([
+            'data' => $task,
+        ], 200);
     }
 
-    /*
-
-     *  ======================================================
-     *
-     *  ======================================================
-    */
-    public function store(Request $request)
+    public function store(StoreRequestTask $request): JsonResponse
     {
-        $data = $request->validate([
-             'Title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'nullable|in:Pending,In Progress,Completed',
-            'priority' => 'nullable|in:Low,Medium,High',
-            'user_id' => 'nullable|exists:users,id',
-        ]);
-
+        $data = $request->validated();
         $task = Task::create($data);
-        return response()->json(['data'=>$data],201);
+
+        return response()->json([
+            'data' => $task,
+        ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(StoreRequestTask $request, $id): JsonResponse
     {
         $task = Task::find($id);
-        if ($task == null) {
-            return response()->json(['message' => 'not found'], 404);
+
+        if (! $task) {
+            return response()->json(['message' => 'Task not found'], 404);
         }
 
-        $data = $request->validate([
-              'Title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'nullable|in:Pending,In Progress,Completed',
-            'priority' => 'nullable|in:Low,Medium,High',
-            'user_id' => 'nullable|exists:users,id',
-        ]);
+        $task->update($request->validated());
 
-      //  unset($data['user_id']);
-        $task->update($data);
-        return response()->json(['data'=>$task],201);
-
+        return response()->json([
+            'data' => $task,
+        ], 200);
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
-
         $task = Task::find($id);
-        if ($task == null) {
-            return response()->json(['msgg' => 'not found '], 404);
+
+        if (! $task) {
+            return response()->json(['message' => 'Task not found'], 404);
         }
 
         $task->delete();
 
-        return response()->json(['message' => 'deleted', 'data' => $task], 200);
-
+        return response()->json([
+            'message' => 'Task deleted successfully',
+            'data' => $task,
+        ], 200);
     }
 }
 

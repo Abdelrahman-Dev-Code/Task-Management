@@ -2,28 +2,42 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Task;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use app\Models\Task;
-use app\Models\User;
 
 class TaskSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Description: Run the database seeds.
+     *
+     * @author Abdelrahman-Dev-Code
+     * @created 2026-08-15
+     * @modified 2026-08-15
+     * @version 1
+     *
+     * @return void
      */
     public function run(): void
     {
 
-            Task::create(
-                [
-                  'Title'=>' my Taskes 1',
-                  'description'=>'of data in progranming ',
-                  'status'=>'Pending',
-                  'priority'=>'Low',
-                  'user_id'=>1,
-                ]
+        // Task::create(
+        //     [
+        //       'Title'=>' my Taskes 1',
+        //       'description'=>'of data in progranming ',
+        //       'status'=>'Pending',
+        //       'priority'=>'Low',
+        //       'user_id'=>1,
+        //     ]
+        // );
+        $users = User::all();
+        foreach ($users as $user) {
+
+            Task::factory(10)->create(
+                ['user_id' => $user->id]
             );
+
+        }
 
     }
 }

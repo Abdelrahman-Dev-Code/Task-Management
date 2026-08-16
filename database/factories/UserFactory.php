@@ -1,8 +1,17 @@
 <?php
 
+/**
+ * File Name: UserFactory.php
+ * Description:
+ * Developer: Abdelrahman-Dev-Code
+ * Created Date: 2026-08-14
+ * Last Modified: 2026-08-14
+ */
+
+
 namespace Database\Factories;
 
-use App\Models\User;
+// use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,12 +25,17 @@ class UserFactory extends Factory
      * The current password being used by the factory.
      */
     protected static ?string $password;
-    
+
 
     /**
-     * Define the model's default state.
+     * Description: Define the model's default state.
      *
-     * @return array<string, mixed>
+     * @author Abdelrahman-Dev-Code
+     * @created 2026-08-15
+     * @modified 2026-08-15
+     * @version 1
+     *
+     * @return void
      */
     public function definition(): array
     {

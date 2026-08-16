@@ -6,31 +6,28 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Task;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Description: Run the database seeds.
+     *
+     * @author Abdelrahman-Dev-Code
+     * @created 2026-08-15
+     * @modified 2026-08-15
+     * @version 2
+     *
+     *
+     * @return  void
      */
-
     public function run(): void
     {
-
-        // User::create([
-        //     'name'=>'ahmed ',
-        //     'email'=>'ahmed@gamail.com ',
-        //     'password'=>'12345678 '
-        // ]);
-          Task::create(
-            [
-              'Title'=>' my Taskes 1',
-              'description'=>'of data in progranming ',
-              'status'=>'Pending',
-              'priority'=>'Low',
-              'user_id'=>1,
-
-
-            ]
-        );
+            User::firstOrCreate([
+                'name'=>'ahmed ',
+                'email'=>'ahmed@gamail.com ',
+                'password'=>Hash::make('12345678')
+        ]);
+        User::factory(5)->create();
     }
 }
