@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,11 +18,25 @@ Route::get('/user', function (Request $request) {
 
 
 
-        Route::get('tasks', [TaskController::class, 'index']);
-        Route::get('tasks/{id}', [TaskController::class, 'show'])->where('id', '[1-9]+');
-        Route::post('tasks', [TaskController::class, 'store']);
-        Route::put('tasks/{id}', [TaskController::class, 'update'])->whereNumber('id');
-        Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
+        // Route::get('tasks', [TaskController::class, 'index']);
+        // Route::get('tasks/{id}', [TaskController::class, 'show'])->where('id', '[1-9]+');
+        // Route::post('tasks', [TaskController::class, 'store']);
+        // Route::put('tasks/{id}', [TaskController::class, 'update'])->whereNumber('id');
+        // Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
+
+Route::get('tasks', [TaskController::class, 'index']);
+Route::get('tasks/{id}', [TaskController::class, 'show']);
+
+// Authentication routes (API tokens via Sanctum)
+Route::post('register', [AuthController::class, 'register']);
+Route::post('login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('tasks', [TaskController::class, 'store']);
+    Route::put('tasks/{id}', [TaskController::class, 'update']);
+    Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
+});
 
 // ===================================================================
 //                     The End Route API Tasks
@@ -39,7 +54,7 @@ Route::get('/user', function (Request $request) {
         // Route::put('user/{id}', [UserController::class, 'update']);
         // Route::delete('user/{id}', [UserController::class, 'destroy']);
         // Route::delete('user', [UserController::class, 'edit']);
-           Route::resource('user', UserController::class);
+        //    Route::resource('user', UserController::class);
 
 
  // ===================================================================

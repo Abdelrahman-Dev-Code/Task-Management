@@ -13,7 +13,7 @@ class TaskSeeder extends Seeder
      *
      * @author Abdelrahman-Dev-Code
      * @created 2026-08-15
-     * @modified 2026-08-15
+     * @modified 2026-08-21
      * @version 1
      *
      * @return void
@@ -30,14 +30,18 @@ class TaskSeeder extends Seeder
         //       'user_id'=>1,
         //     ]
         // );
-        $users = User::all();
-        foreach ($users as $user) {
 
-            Task::factory(10)->create(
-                ['user_id' => $user->id]
-            );
+      //  Task::truncate();
 
-        }
+        // $users = User::all();
+        // foreach ($users as $user) {
+
+        //     Task::factory(10)->create(
+        //         ['user_id' => $user->id]
+        //     );
+        // }
+
+        // Task::factory()->for(User::factory()->create(),"Usess")->create();
 
     }
 }

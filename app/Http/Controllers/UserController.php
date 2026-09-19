@@ -10,26 +10,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function login(Request $request): JsonResponse
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Invalid credentials.',
-            ], 401);
-        }
-
-        return response()->json([
-            'message' => 'Login successful.',
-            'data' => $user,
-        ], 200);
-    }
 
     public function index(): JsonResponse
     {

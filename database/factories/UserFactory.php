@@ -5,7 +5,7 @@
  * Description:
  * Developer: Abdelrahman-Dev-Code
  * Created Date: 2026-08-14
- * Last Modified: 2026-08-14
+ * Last Modified: 2026-08-21
  */
 
 
@@ -46,6 +46,11 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function creteUserAndTask(){
+
+       
     }
 
     /**
