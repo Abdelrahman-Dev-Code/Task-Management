@@ -2,13 +2,21 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRequestUser extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Description: Determine if the user is authorized to make this request.
+     *
+     * @author Abdelrahman-Dev-Code
+     *   * @created 2026-08-22
+     *
+     * @modified 2026-08-22
+     *
+     * @version 1
+     *
+     * @return array
      */
     public function authorize(): bool
     {
@@ -16,19 +24,36 @@ class StoreRequestUser extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Description: Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @author Abdelrahman-Dev-Code
+     *
+     * @created 2026-08-22
+     *
+     * @modified 2026-08-22
+     *
+     * @version 1
      */
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'max:10'],
+            'password' => ['required', 'string', 'min:6', 'max:255'],
         ];
     }
 
+    /**
+     * Description:
+     *
+     * @author Abdelrahman-Dev-Code
+     *
+     * @created 2026-08-22
+     *
+     * @modified 2026-08-22
+     *
+     * @version 1
+     */
     public function messages(): array
     {
         return [
@@ -44,7 +69,7 @@ class StoreRequestUser extends FormRequest
             'password.required' => 'كلمة المرور مطلوبة.',
             'password.string' => 'كلمة المرور يجب أن تكون نصًا.',
             'password.min' => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
-            'password.max' => 'كلمة المرور يجب أن تكون 10 أحرف كحد أقصى.',
+            'password.max' => 'كلمة المرور لا يجب أن تتجاوز 255 حرفًا.',
         ];
     }
 

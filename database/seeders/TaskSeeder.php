@@ -12,11 +12,12 @@ class TaskSeeder extends Seeder
      * Description: Run the database seeds.
      *
      * @author Abdelrahman-Dev-Code
-     * @created 2026-08-15
-     * @modified 2026-08-21
-     * @version 1
      *
-     * @return void
+     * @created 2026-08-15
+     *
+     * @modified 2026-08-21
+     *
+     * @version 1
      */
     public function run(): void
     {
@@ -31,7 +32,7 @@ class TaskSeeder extends Seeder
         //     ]
         // );
 
-      //  Task::truncate();
+        //  Task::truncate();
 
         // $users = User::all();
         // foreach ($users as $user) {

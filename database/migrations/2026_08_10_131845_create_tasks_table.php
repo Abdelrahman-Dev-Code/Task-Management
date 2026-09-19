@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->string('Title');
+            $table->string('title');
             $table->text('description')->nullable();
             $table->enum('status', ['Pending', 'In Progress', 'Completed'])->default('Pending');
             $table->enum('priority', ['Low', 'Medium', 'High'])->default('Medium');

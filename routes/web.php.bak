@@ -1,0 +1,49 @@
+<?php
+
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::view('/login', 'livewire.auth.login-form')->name('login');
+Route::view('/register', 'auth.register')->name('register');
+
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+
+    return redirect()->route('tasks.index');
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function () {
+    if (Auth::user()) {
+        Auth::user()->sendEmailVerificationNotification();
+    }
+
+    return back()->with('success', 'تم إرسال رابط التحقق مرة أخرى إلى بريدك الإلكتروني.');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/tasks', function () {
+        return view('tasks.index');
+    })->name('tasks.index');
+
+    Route::post('/logout', function () {
+        Auth::logout();
+
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login');
+    })->name('logout');
+});
+
+Route::get('my', function () {
+    return 'مرحبا';
+});

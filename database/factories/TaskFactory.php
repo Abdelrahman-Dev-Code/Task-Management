@@ -8,12 +8,10 @@
  * Last Modified: 2026-08-21
  */
 
-
 namespace Database\Factories;
 
 use App\Models\Task;
 use App\Models\User;
-use GuzzleHttp\Promise\Create;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -27,8 +25,11 @@ class TaskFactory extends Factory
      * Define the model's default state.
      *
      * @author Abdelrahman-Dev-Code
+     *
      * @created 2026-08-11
+     *
      * @modified 2026-08-21
+     *
      * @version 1
      */
     public function definition(): array
@@ -39,8 +40,7 @@ class TaskFactory extends Factory
             'status' => $this->faker->randomElement(['Pending', 'In Progress', 'Completed']),
             'priority' => $this->faker->randomElement(['Low', 'Medium', 'High']),
             // 'user_id' => User::factory(),
-            'user_id' =>User::inRandomOrder()->first()->id,
+            'user_id' => User::inRandomOrder()->first()->id,
         ];
     }
-
 }

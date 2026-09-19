@@ -2,29 +2,28 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable,HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -32,8 +31,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    function tasks():HasMany{
 
-        return $this->hasMany(Task::class,'user_id','id');
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'user_id', 'id');
     }
 }

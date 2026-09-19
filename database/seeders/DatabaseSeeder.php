@@ -16,17 +16,16 @@ class DatabaseSeeder extends Seeder
      *
      * @created 2026-08-15
      *
-     * @modified 2026-08-15
+     * @modified 2026-08-31
      *
      * @version 1
      */
     public function run(): void
     {
-       
 
-        $this->call([
-            UserSeeder::class,
-            TaskSeeder::class,
-        ]);
+        // $this->call([
+        //     UserSeeder::class,
+        //     TaskSeeder::class,
+        // ]);
     }
 }

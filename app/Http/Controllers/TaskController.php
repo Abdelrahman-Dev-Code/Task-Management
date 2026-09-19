@@ -2,84 +2,93 @@
 
 /**
  * File Name: TaskController.php
-* Description: m  
+ * Description: m
  * Developer: Abdelrahman-Dev-Code
  * Created Date: 2026-08-16
  * Last Modified: 2026-08-16
  */
 
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRequestTask;
-use App\Models\Task;
+use App\Http\Resources\TaskResource;
+use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
 
 class TaskController extends Controller
 {
+    public function __construct(protected TaskService $taskService) {}
+
     public function index(): JsonResponse
     {
-        $tasks = Task::all();
+        $userId = auth('sanctum')->id();
+        $tasks = $this->taskService->getTaskByUser($userId);
 
         return response()->json([
-            'data' => $tasks,
+            'data' => TaskResource::collection($tasks),
+            'message' => 'تم جلب المهام بنجاح.',
         ], 200);
     }
 
-    public function show($id): JsonResponse
+    public function show(int|string $id): JsonResponse
     {
-        $task = Task::find($id);
+        $task = $this->taskService->getTaskById($id);
 
-        if (! $task) {
-            return response()->json(['message' => 'Task not found'], 404);
+        if (! $task || $task->user_id !== auth()->id()) {
+            return response()->json(['message' => 'المهمة غير موجودة.'], 404);
         }
 
         return response()->json([
-            'data' => $task,
+            'data' => new TaskResource($task),
+            'message' => 'تم جلب المهمة بنجاح.',
         ], 200);
     }
 
     public function store(StoreRequestTask $request): JsonResponse
     {
-        $data = $request->validated();
-        $task = Task::create($data);
+        try {
+            $task = $this->taskService->createTask($request->validated());
 
-        return response()->json([
-            'data' => $task,
-        ], 201);
+            return response()->json([
+                'data' => new TaskResource($task),
+                'message' => 'تم إنشاء المهمة بنجاح.',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'فشل حفظ المهمة: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function update(StoreRequestTask $request, $id): JsonResponse
+    public function update(StoreRequestTask $request, int|string $id): JsonResponse
     {
-        $task = Task::find($id);
+        $task = $this->taskService->getTaskById($id);
 
-        if (! $task) {
-            return response()->json(['message' => 'Task not found'], 404);
+        if (! $task || $task->user_id !== auth()->id()) {
+            return response()->json(['message' => 'المهمة غير موجودة.'], 404);
         }
 
-        $task->update($request->validated());
+        $updatedTask = $this->taskService->updateTask($id, $request->validated());
 
         return response()->json([
-            'data' => $task,
+            'data' => new TaskResource($this->taskService->getTaskById($id)),
+            'message' => 'تم تحديث المهمة بنجاح.',
         ], 200);
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy(int|string $id): JsonResponse
     {
-        $task = Task::find($id);
+        $task = $this->taskService->getTaskById($id);
 
-        if (! $task) {
-            return response()->json(['message' => 'Task not found'], 404);
+        if (! $task || $task->user_id !== auth()->id()) {
+            return response()->json(['message' => 'المهمة غير موجودة.'], 404);
         }
 
-        $task->delete();
+        $this->taskService->deleteTask($id);
 
         return response()->json([
-            'message' => 'Task deleted successfully',
+            'message' => 'تم حذف المهمة بنجاح.',
             'data' => $task,
         ], 200);
     }
 }
-
-

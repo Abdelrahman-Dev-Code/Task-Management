@@ -8,7 +8,6 @@
  * Last Modified: 2026-08-21
  */
 
-
 namespace Database\Factories;
 
 // use App\Models\User;
@@ -26,13 +25,15 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
 
-
     /**
      * Description: Define the model's default state.
      *
      * @author Abdelrahman-Dev-Code
+     *
      * @created 2026-08-15
+     *
      * @modified 2026-08-15
+     *
      * @version 1
      *
      * @return void
@@ -48,10 +49,7 @@ class UserFactory extends Factory
         ];
     }
 
-    public function creteUserAndTask(){
-
-       
-    }
+    public function creteUserAndTask() {}
 
     /**
      * Indicate that the model's email address should be unverified.
