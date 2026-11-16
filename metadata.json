@@ -1,0 +1,5 @@
+{
+  "name": "Task Management",
+  "description": "نظام ويب لإدارة المهام مبني بواجهة عربية مع مصادقة المستخدمين وإدارة كاملة للمهام (CRUD) عبر واجهة API.",
+  "requestFramePermissions": []
+}
