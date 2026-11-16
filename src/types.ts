@@ -10,6 +10,7 @@ export interface User {
   avatar: string | null;
   provider: AuthProvider;
   google_id: string | null;
+  has_password: boolean;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/app_config.dart';
@@ -9,21 +10,31 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
   final Map<String, dynamic>? errors;
+  final int? retryAfterSeconds;
 
-  const ApiException(this.statusCode, this.message, {this.errors});
+  const ApiException(
+    this.statusCode,
+    this.message, {
+    this.errors,
+    this.retryAfterSeconds,
+  });
 
   @override
   String toString() => message;
 }
 
-/// عميل HTTP مركزي يدير التوكن، عنوان الخادم، المهلة الزمنية، ومعالجة الأخطاء
+/// عميل HTTP مركزي يدير التوكن، Keep-Alive، عنوان الخادم، المهلة الزمنية، ومعالجة الأخطاء
 class ApiClient {
   static const _tokenKey = 'auth_token';
   static const _baseUrlKey = 'api_base_url';
   static const Duration _timeout = Duration(seconds: 15);
 
+  /// استخدام عميل HTTP دائم (Keep-Alive) لتسريع الاتصالات المتكررة
+  final http.Client _http = http.Client();
+
   String? _token;
   String _baseUrl = AppConfig.defaultBaseUrl;
+  VoidCallback? onUnauthorized;
 
   String get baseUrl => _baseUrl;
   String? get token => _token;
@@ -78,10 +89,13 @@ class ApiClient {
     return uri.replace(queryParameters: query);
   }
 
-  Future<Map<String, dynamic>> _send(Future<http.Response> Function() requestFn) async {
+  Future<Map<String, dynamic>> _send(
+    String path,
+    Future<http.Response> Function() requestFn,
+  ) async {
     try {
       final response = await requestFn().timeout(_timeout);
-      return _decode(response);
+      return _decode(path, response);
     } on TimeoutException {
       throw const ApiException(408, 'انتهت مهلة الاتصال بالخادم، يرجى المحاولة مرة أخرى.');
     } on http.ClientException {
@@ -93,12 +107,13 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) {
-    return _send(() => http.get(_uri(path, query), headers: _headers()));
+    return _send(path, () => _http.get(_uri(path, query), headers: _headers()));
   }
 
   Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body}) {
     return _send(
-      () => http.post(
+      path,
+      () => _http.post(
         _uri(path),
         headers: _headers(),
         body: body != null ? jsonEncode(body) : null,
@@ -108,7 +123,8 @@ class ApiClient {
 
   Future<Map<String, dynamic>> put(String path, {Map<String, dynamic>? body}) {
     return _send(
-      () => http.put(
+      path,
+      () => _http.put(
         _uri(path),
         headers: _headers(),
         body: body != null ? jsonEncode(body) : null,
@@ -118,7 +134,8 @@ class ApiClient {
 
   Future<Map<String, dynamic>> patch(String path, {Map<String, dynamic>? body}) {
     return _send(
-      () => http.patch(
+      path,
+      () => _http.patch(
         _uri(path),
         headers: _headers(),
         body: body != null ? jsonEncode(body) : null,
@@ -127,7 +144,7 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> delete(String path) {
-    return _send(() => http.delete(_uri(path), headers: _headers()));
+    return _send(path, () => _http.delete(_uri(path), headers: _headers()));
   }
 
   /// قياس سرعة الاستجابة وفحص جاهزية الخادم
@@ -138,7 +155,7 @@ class ApiClient {
     return sw.elapsedMilliseconds;
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
+  Map<String, dynamic> _decode(String path, http.Response response) {
     Map<String, dynamic> payload = <String, dynamic>{};
     if (response.body.isNotEmpty) {
       try {
@@ -155,12 +172,28 @@ class ApiClient {
       return payload;
     }
 
+    // معالجة انتهاء الجلسة تلقائياً للطلبات المحمية
+    final isPublicAuthPath = path.contains('/login') ||
+        path.contains('/register') ||
+        path.contains('/otp') ||
+        path.contains('/password/') ||
+        path.contains('/auth/google');
+
+    if (response.statusCode == 401 && !isPublicAuthPath && _token != null) {
+      onUnauthorized?.call();
+    }
+
     final message = (payload['message'] as String?) ??
         'تعذر الاتصال بالخادم (رمز الحالة: ${response.statusCode}).';
     throw ApiException(
       response.statusCode,
       message,
       errors: payload['errors'] as Map<String, dynamic>?,
+      retryAfterSeconds: (payload['retry_after_seconds'] as num?)?.toInt(),
     );
+  }
+
+  void dispose() {
+    _http.close();
   }
 }

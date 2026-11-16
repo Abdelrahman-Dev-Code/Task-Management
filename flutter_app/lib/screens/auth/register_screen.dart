@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  bool _obscurePassword = true;
   bool _loading = false;
   String? _error;
 
@@ -73,6 +74,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('إنشاء حساب جديد')),
       body: SafeArea(
@@ -82,13 +85,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -108,23 +106,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: scheme.errorContainer,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.shade200),
                             ),
                             child: Text(
                               _error!,
-                              style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                              style: TextStyle(color: scheme.onErrorContainer, fontSize: 13),
                             ),
                           ),
                           const SizedBox(height: 14),
                         ],
                         TextFormField(
                           controller: _nameController,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             labelText: 'الاسم الكامل',
                             prefixIcon: Icon(Icons.person_outline),
-                            border: OutlineInputBorder(),
                           ),
                           validator: (v) =>
                               (v == null || v.trim().isEmpty) ? 'الاسم مطلوب' : null,
@@ -134,10 +131,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           textDirection: TextDirection.ltr,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             labelText: 'البريد الإلكتروني',
                             prefixIcon: Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(),
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'البريد الإلكتروني مطلوب';
@@ -148,12 +145,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           textDirection: TextDirection.ltr,
-                          decoration: const InputDecoration(
+                          textInputAction: TextInputAction.next,
+                          decoration: InputDecoration(
                             labelText: 'كلمة المرور',
-                            prefixIcon: Icon(Icons.lock_outline),
-                            border: OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            ),
                           ),
                           validator: (v) =>
                               (v == null || v.length < 6) ? '6 أحرف على الأقل' : null,
@@ -161,12 +167,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _confirmController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           textDirection: TextDirection.ltr,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _loading ? null : _submitRegister(),
                           decoration: const InputDecoration(
                             labelText: 'تأكيد كلمة المرور',
                             prefixIcon: Icon(Icons.lock_reset_outlined),
-                            border: OutlineInputBorder(),
                           ),
                           validator: (v) =>
                               v != _passwordController.text ? 'كلمة المرور غير متطابقة' : null,

@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/app_config.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
+import 'desktop_oauth.dart';
 
 class AuthPayload {
   final UserModel user;
@@ -54,6 +56,18 @@ class AuthService {
 
   AuthService(this._client);
 
+  String get _deviceName {
+    if (kIsWeb) return 'flutter-web';
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => 'flutter-android',
+      TargetPlatform.iOS => 'flutter-ios',
+      TargetPlatform.windows => 'flutter-windows',
+      TargetPlatform.macOS => 'flutter-macos',
+      TargetPlatform.linux => 'flutter-linux',
+      TargetPlatform.fuchsia => 'flutter-fuchsia',
+    };
+  }
+
   Future<AuthPayload> register({
     required String name,
     required String email,
@@ -63,7 +77,7 @@ class AuthService {
       'name': name,
       'email': email,
       'password': password,
-      'device_name': 'flutter-mobile',
+      'device_name': _deviceName,
     });
 
     final token = data['token'] as String;
@@ -85,7 +99,7 @@ class AuthService {
     final data = await _client.post('/api/login', body: {
       'email': email,
       'password': password,
-      'device_name': 'flutter-mobile',
+      'device_name': _deviceName,
     });
 
     final token = data['token'] as String;
@@ -124,7 +138,7 @@ class AuthService {
       'email': email,
       'otp': otp,
       'purpose': purpose,
-      'device_name': 'flutter-otp',
+      'device_name': '$_deviceName-otp',
     });
 
     final token = data['token'] as String?;
@@ -166,12 +180,36 @@ class AuthService {
     return (data['message'] as String?) ?? 'تم إعادة تعيين كلمة المرور بنجاح.';
   }
 
+  /// تسجيل الدخول عبر جوجل مع دعم تلقائي لكل المنصات:
+  /// - Android / iOS / Web / macOS (مع Client ID): GoogleSignIn الأصلي
+  /// - Windows / Linux (أو macOS بدون Client ID): تدفق المتصفح Loopback OAuth2
   Future<AuthPayload> continueWithGoogle() async {
+    final isWindowsOrLinux = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux);
+
+    final isMacWithoutNativeClientId = !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.macOS &&
+        AppConfig.googleServerClientId.isEmpty;
+
+    if (isWindowsOrLinux || isMacWithoutNativeClientId) {
+      return runDesktopGoogleOAuth(_client);
+    }
+
+    if (kIsWeb && AppConfig.googleServerClientId.isEmpty) {
+      throw const ApiException(
+        0,
+        'لتسجيل الدخول عبر جوجل على الويب، مرر --dart-define=GOOGLE_CLIENT_ID.',
+      );
+    }
+
     final googleSignIn = GoogleSignIn(
       scopes: const ['email', 'profile'],
-      serverClientId: AppConfig.googleServerClientId.isNotEmpty
-          ? AppConfig.googleServerClientId
-          : null,
+      clientId: kIsWeb ? AppConfig.googleServerClientId : null,
+      serverClientId:
+          !kIsWeb && AppConfig.googleServerClientId.isNotEmpty
+              ? AppConfig.googleServerClientId
+              : null,
     );
 
     final account = await googleSignIn.signIn();
@@ -194,7 +232,7 @@ class AuthService {
     final data = await _client.post('/api/auth/google', body: {
       if (idToken != null && idToken.isNotEmpty) 'id_token': idToken,
       if (accessToken != null && accessToken.isNotEmpty) 'access_token': accessToken,
-      'device_name': 'flutter-google',
+      'device_name': '$_deviceName-google',
     });
 
     final token = data['token'] as String;

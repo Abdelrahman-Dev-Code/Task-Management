@@ -54,10 +54,7 @@ class _TaskManagementAppState extends State<TaskManagementApp> {
           home: AnimatedSwitcher(
             duration: const Duration(milliseconds: 280),
             child: !_session.isInitialized
-                ? const Scaffold(
-                    key: ValueKey('splash'),
-                    body: Center(child: CircularProgressIndicator()),
-                  )
+                ? const _SplashScreen(key: ValueKey('splash'))
                 : _session.isAuthenticated
                     ? MainShellScreen(
                         key: const ValueKey('home'),
@@ -70,6 +67,55 @@ class _TaskManagementAppState extends State<TaskManagementApp> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryIndigo, AppTheme.secondaryIndigo],
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryIndigo.withValues(alpha: 0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.task_alt_rounded, color: Colors.white, size: 38),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'لوحة المهام',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.6, color: scheme.primary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

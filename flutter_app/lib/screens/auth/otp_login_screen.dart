@@ -55,6 +55,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('الدخول عبر OTP')),
       body: SafeArea(
@@ -64,13 +66,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -90,11 +87,10 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: scheme.errorContainer,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.shade200),
                             ),
-                            child: Text(_error!, style: TextStyle(color: Colors.red.shade800)),
+                            child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
                           ),
                           const SizedBox(height: 14),
                         ],
@@ -102,10 +98,11 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           textDirection: TextDirection.ltr,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _loading ? null : _sendLoginOtp(),
                           decoration: const InputDecoration(
                             labelText: 'البريد الإلكتروني',
                             prefixIcon: Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(),
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'البريد الإلكتروني مطلوب';

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../services/api_client.dart';
 import '../../services/session_controller.dart';
 import '../../widgets/otp_code_input.dart';
 
@@ -44,9 +45,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     super.dispose();
   }
 
-  void _startCooldown() {
+  void _startCooldown([int seconds = 30]) {
     _timer?.cancel();
-    setState(() => _cooldownSeconds = 30);
+    setState(() => _cooldownSeconds = seconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -118,6 +119,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           SnackBar(content: Text(result.message)),
         );
       }
+    } on ApiException catch (e) {
+      if (e.retryAfterSeconds != null && e.retryAfterSeconds! > 0) {
+        _startCooldown(e.retryAfterSeconds!);
+      }
+      setState(() => _error = e.message);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -127,6 +133,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final title = switch (widget.purpose) {
       'login' => 'تسجيل الدخول برمز التحقق',
       'reset_password' => 'تأكيد رمز استعادة كلمة المرور',
@@ -169,9 +176,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
+                            color: scheme.primaryContainer,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.indigo.shade200),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -179,7 +185,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               Text(
                                 'رمز التطوير: $_devOtp',
                                 style: TextStyle(
-                                  color: Colors.indigo.shade900,
+                                  color: scheme.onPrimaryContainer,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -199,13 +205,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: scheme.errorContainer,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.shade200),
                           ),
                           child: Text(
                             _error!,
-                            style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                            style: TextStyle(color: scheme.onErrorContainer, fontSize: 13),
                           ),
                         ),
                         const SizedBox(height: 14),

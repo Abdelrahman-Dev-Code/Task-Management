@@ -45,8 +45,11 @@ export function formatTimestamp(date: Date = new Date()): string {
 }
 
 export function toPublicUser(user: StoredUser): User {
-  const { passwordHash: _passwordHash, ...publicUser } = user;
-  return publicUser;
+  const { passwordHash, ...publicUser } = user;
+  return {
+    ...publicUser,
+    has_password: passwordHash !== null,
+  };
 }
 
 export function toTaskResource(task: StoredTask): Task {
@@ -80,6 +83,7 @@ function seedInitialData(): void {
     avatar: null,
     provider: 'local',
     google_id: null,
+    has_password: true,
     passwordHash: bcrypt.hashSync('12345678', 10),
     email_verified_at: now,
     created_at: now,
@@ -189,6 +193,7 @@ export const store = {
       avatar: input.avatar ?? null,
       provider: input.provider ?? 'local',
       google_id: input.google_id ?? null,
+      has_password: Boolean(input.password),
       passwordHash: input.password ? bcrypt.hashSync(input.password, 10) : null,
       email_verified_at: input.email_verified_at ?? null,
       created_at: now,
@@ -225,6 +230,7 @@ export const store = {
       email_verified_at:
         patch.email_verified_at !== undefined ? patch.email_verified_at : existing.email_verified_at,
       passwordHash: patch.password ? bcrypt.hashSync(patch.password, 10) : existing.passwordHash,
+      has_password: Boolean(patch.password ? true : existing.passwordHash),
       updated_at: formatTimestamp(),
     };
 

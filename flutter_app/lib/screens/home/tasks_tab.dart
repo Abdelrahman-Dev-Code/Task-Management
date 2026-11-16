@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/date_formatter.dart';
 import '../../core/responsive.dart';
 import '../../models/task_model.dart';
 import '../../services/session_controller.dart';
+import '../../services/task_service.dart';
 import '../../widgets/task_detail_sheet.dart';
 import '../../widgets/task_skeleton.dart';
 import 'task_form_sheet.dart';
 
-/// تبويب لوحة المهام الرئيسي: إحصائيات تفاعلية، بحث فوري، فلاتر، وتجاوب كامل
+/// تبويب لوحة المهام الرئيسي: تخزين مؤقت فوري، ترقيم، بحث فوري، فلاتر، وتجاوب كامل
 class TasksTab extends StatefulWidget {
   final SessionController session;
 
@@ -19,6 +22,8 @@ class TasksTab extends StatefulWidget {
 
 class _TasksTabState extends State<TasksTab> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  final _scrollController = ScrollController();
   Timer? _searchDebounce;
 
   List<TaskModel> _tasks = <TaskModel>[];
@@ -34,20 +39,48 @@ class _TasksTabState extends State<TasksTab> {
   TaskPriority? _priorityFilter;
   bool _overdueOnly = false;
   String _sortBy = 'created_at';
+  String _sortDir = 'desc';
+  int _page = 1;
+  bool _hasMore = false;
   bool _loading = true;
+  bool _loadingMore = false;
   String? _error;
+  int _fetchSeq = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadAll();
+    _scrollController.addListener(_onScroll);
+    _bootstrap();
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _bootstrap() async {
+    final cached = await widget.session.taskService.loadCache();
+    if (mounted && cached != null) {
+      setState(() {
+        _tasks = cached.tasks;
+        _stats = cached.stats;
+        _loading = false;
+      });
+    }
+    await _loadAll(showSkeleton: cached == null);
+  }
+
+  void _onScroll() {
+    if (_loading || _loadingMore || !_hasMore) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 240) {
+      _loadMore();
+    }
   }
 
   void _onSearchChanged(String _) {
@@ -58,7 +91,16 @@ class _TasksTabState extends State<TasksTab> {
     });
   }
 
+  bool get _isDefaultUnfilteredQuery =>
+      _searchController.text.trim().isEmpty &&
+      _statusFilter == null &&
+      _priorityFilter == null &&
+      !_overdueOnly &&
+      _sortBy == 'created_at' &&
+      _sortDir == 'desc';
+
   Future<void> _loadAll({bool showSkeleton = true}) async {
+    final seq = ++_fetchSeq;
     if (showSkeleton) {
       setState(() {
         _loading = true;
@@ -76,18 +118,65 @@ class _TasksTabState extends State<TasksTab> {
           priority: _priorityFilter,
           overdueOnly: _overdueOnly,
           sortBy: _sortBy,
+          sortDir: _sortDir,
+          page: 1,
+          perPage: 20,
         ),
         widget.session.taskService.getStats(),
       ]);
-      if (!mounted) return;
+
+      if (!mounted || seq != _fetchSeq) return;
+      final pageResult = results[0] as TaskPageResult;
+      final stats = results[1] as TaskStatsModel;
+
       setState(() {
-        _tasks = results[0] as List<TaskModel>;
-        _stats = results[1] as TaskStatsModel;
+        _tasks = pageResult.tasks;
+        _page = pageResult.page;
+        _hasMore = pageResult.hasMore;
+        _stats = stats;
+      });
+
+      if (_isDefaultUnfilteredQuery) {
+        unawaited(widget.session.taskService.saveCache(pageResult.tasks, stats));
+      }
+    } catch (e) {
+      if (mounted && seq == _fetchSeq) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted && seq == _fetchSeq) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    final seq = _fetchSeq;
+    setState(() => _loadingMore = true);
+    try {
+      final next = await widget.session.taskService.getTasks(
+        search: _searchController.text,
+        status: _statusFilter,
+        priority: _priorityFilter,
+        overdueOnly: _overdueOnly,
+        sortBy: _sortBy,
+        sortDir: _sortDir,
+        page: _page + 1,
+        perPage: 20,
+      );
+      if (!mounted || seq != _fetchSeq) return;
+      setState(() {
+        _tasks = [..._tasks, ...next.tasks];
+        _page = next.page;
+        _hasMore = next.hasMore;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -102,7 +191,7 @@ class _TasksTabState extends State<TasksTab> {
         priority: form.priority,
         dueDate: form.dueDate,
       );
-      await widget.session.refreshUnreadCount();
+      unawaited(widget.session.refreshUnreadCount());
       await _loadAll(showSkeleton: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,16 +236,7 @@ class _TasksTabState extends State<TasksTab> {
     final idx = _tasks.indexWhere((t) => t.id == task.id);
     if (idx != -1) {
       setState(() {
-        _tasks[idx] = TaskModel(
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          status: nextStatus,
-          priority: task.priority,
-          dueDate: task.dueDate,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
-        );
+        _tasks[idx] = task.copyWith(status: nextStatus);
       });
     }
 
@@ -200,6 +280,23 @@ class _TasksTabState extends State<TasksTab> {
   }
 
   Future<void> _clearCompleted() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تنظيف المهام المكتملة'),
+        content: Text('هل تريد حذف جميع المهام المكتملة (${_stats.completed}) نهائياً؟'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف الكل'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     try {
       final deleted = await widget.session.taskService.deleteCompleted();
       await _loadAll(showSkeleton: false);
@@ -236,13 +333,31 @@ class _TasksTabState extends State<TasksTab> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final columns = Responsive.taskGridColumns(context);
     final hasActiveFilters = _statusFilter != null ||
         _priorityFilter != null ||
         _overdueOnly ||
         _searchController.text.isNotEmpty;
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true): _createTask,
+        const SingleActivator(LogicalKeyboardKey.keyN, meta: true): _createTask,
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true):
+            () => _searchFocusNode.requestFocus(),
+        const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
+            () => _searchFocusNode.requestFocus(),
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            () => _loadAll(showSkeleton: false),
+        const SingleActivator(LogicalKeyboardKey.keyR, meta: true):
+            () => _loadAll(showSkeleton: false),
+        const SingleActivator(LogicalKeyboardKey.f5):
+            () => _loadAll(showSkeleton: false),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('لوحة المهام', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
@@ -252,6 +367,14 @@ class _TasksTabState extends State<TasksTab> {
               icon: const Icon(Icons.cleaning_services_outlined),
               onPressed: _clearCompleted,
             ),
+          IconButton(
+            tooltip: _sortDir == 'desc' ? 'الترتيب: تنازلي' : 'الترتيب: تصاعدي',
+            icon: Icon(_sortDir == 'desc' ? Icons.south : Icons.north),
+            onPressed: () {
+              setState(() => _sortDir = _sortDir == 'desc' ? 'asc' : 'desc');
+              _loadAll(showSkeleton: false);
+            },
+          ),
           PopupMenuButton<String>(
             tooltip: 'ترتيب المهام',
             icon: const Icon(Icons.sort),
@@ -261,7 +384,7 @@ class _TasksTabState extends State<TasksTab> {
               _loadAll(showSkeleton: false);
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'created_at', child: Text('الأحدث إنشاءً')),
+              PopupMenuItem(value: 'created_at', child: Text('تاريخ الإنشاء')),
               PopupMenuItem(value: 'priority', child: Text('الأولوية')),
               PopupMenuItem(value: 'due_date', child: Text('تاريخ الاستحقاق')),
               PopupMenuItem(value: 'title', child: Text('الاسم أبجدياً')),
@@ -277,12 +400,15 @@ class _TasksTabState extends State<TasksTab> {
       body: RefreshIndicator(
         onRefresh: () => _loadAll(showSkeleton: false),
         child: ListView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
             _buildStatsDashboard(),
             const SizedBox(height: 14),
             TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 hintText: 'ابحث بالعنوان أو الوصف...',
                 prefixIcon: const Icon(Icons.search),
@@ -383,15 +509,15 @@ class _TasksTabState extends State<TasksTab> {
             const SizedBox(height: 8),
             if (_error != null)
               Card(
-                color: Colors.red.shade50,
+                color: scheme.errorContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700),
+                      Icon(Icons.error_outline, color: scheme.onErrorContainer),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(_error!, style: TextStyle(color: Colors.red.shade800)),
+                        child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
                       ),
                       TextButton(
                         onPressed: () => _loadAll(),
@@ -436,9 +562,24 @@ class _TasksTabState extends State<TasksTab> {
                 ),
                 itemBuilder: (_, index) => _buildTaskCard(_tasks[index], inGrid: true),
               ),
+            if (_loadingMore)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_hasMore)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: OutlinedButton(
+                  onPressed: _loadMore,
+                  child: const Text('تحميل المزيد من المهام'),
+                ),
+              ),
           ],
         ),
       ),
+    ),
+    ),
     );
   }
 
@@ -702,7 +843,10 @@ class _TasksTabState extends State<TasksTab> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        overdue ? 'متأخرة: ${task.dueDate}' : task.dueDate!,
+                        DateFormatter.formatDueDate(
+                          task.dueDate!,
+                          isCompleted: isCompleted,
+                        ),
                         style: TextStyle(
                           color: overdue ? Colors.red.shade700 : Colors.grey.shade600,
                           fontSize: 11,

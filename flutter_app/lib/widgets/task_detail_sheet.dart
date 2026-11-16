@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/date_formatter.dart';
 import '../models/task_model.dart';
 
 /// نافذة عرض تفاصيل المهمة كاملة مع أزرار تغيير الحالة والتعديل والحذف
@@ -13,10 +14,18 @@ Future<void> showTaskDetailSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    constraints: const BoxConstraints(maxWidth: 620),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (ctx) {
+      final dueLabel = task.dueDate != null
+          ? DateFormatter.formatDueDate(
+              task.dueDate!,
+              isCompleted: task.status == TaskStatus.completed,
+            )
+          : null;
+
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: SingleChildScrollView(
@@ -57,10 +66,10 @@ Future<void> showTaskDetailSheet(
                 children: [
                   Chip(label: Text('الحالة: ${task.status.labelAr}')),
                   Chip(label: Text('الأولوية: ${task.priority.labelAr}')),
-                  if (task.dueDate != null)
+                  if (dueLabel != null)
                     Chip(
                       avatar: const Icon(Icons.event_outlined, size: 18),
-                      label: Text('الاستحقاق: ${task.dueDate}'),
+                      label: Text('الاستحقاق: $dueLabel'),
                     ),
                 ],
               ),
@@ -80,8 +89,8 @@ Future<void> showTaskDetailSheet(
               ),
               const SizedBox(height: 14),
               Text(
-                'تاريخ الإنشاء: ${task.createdAt}\nآخر تحديث: ${task.updatedAt}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.5),
+                'تاريخ الإنشاء: ${DateFormatter.formatRelative(task.createdAt)}\nآخر تحديث: ${DateFormatter.formatRelative(task.updatedAt)}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.6),
               ),
               const SizedBox(height: 16),
               const Text(

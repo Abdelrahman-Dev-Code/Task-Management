@@ -15,6 +15,7 @@ class ProfileTab extends StatefulWidget {
 
 class _ProfileTabState extends State<ProfileTab> {
   bool _busy = false;
+  int? _lastLatencyMs;
 
   Future<void> _verifyEmailViaOtp() async {
     final user = widget.session.user;
@@ -88,18 +89,21 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _changePassword() async {
+    final user = widget.session.user;
+    if (user == null) return;
+
     final currentCtrl = TextEditingController();
     final nextCtrl = TextEditingController();
-    final isGoogleOnly = widget.session.user?.provider == 'google';
+    final requiresCurrent = user.hasPassword;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تغيير كلمة المرور'),
+        title: Text(requiresCurrent ? 'تغيير كلمة المرور' : 'تعيين كلمة مرور للحساب'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isGoogleOnly) ...[
+            if (requiresCurrent) ...[
               TextField(
                 controller: currentCtrl,
                 obscureText: true,
@@ -143,9 +147,10 @@ class _ProfileTabState extends State<ProfileTab> {
 
     try {
       await widget.session.authService.updateProfile(
-        currentPassword: isGoogleOnly ? null : currentPassword,
+        currentPassword: requiresCurrent ? currentPassword : null,
         newPassword: newPassword,
       );
+      await widget.session.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تحديث كلمة المرور بنجاح')),
@@ -158,14 +163,35 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
+  Future<void> _confirmLogoutAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تسجيل الخروج من جميع الأجهزة'),
+        content: const Text('سيتم إنهاء جميع الجلسات النشطة على كل الأجهزة المتصلة بحسابك.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('تأكيد الخروج'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.session.logout(allDevices: true);
+    }
+  }
+
   Future<void> _testConnection() async {
     try {
       final ms = await widget.session.apiClient.pingHealth();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('الاتصال بالخادم ممتاز (زمن الاستجابة: ${ms}ms)')),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _lastLatencyMs = ms);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('الاتصال بالخادم ممتاز (زمن الاستجابة: ${ms}ms)')),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -185,7 +211,9 @@ class _ProfileTabState extends State<ProfileTab> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الحساب الشخصي')),
+      appBar: AppBar(
+        title: const Text('الحساب الشخصي', style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
@@ -302,7 +330,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.lock_reset_outlined),
-                      title: const Text('تغيير كلمة المرور'),
+                      title: Text(
+                        user.hasPassword ? 'تغيير كلمة المرور' : 'تعيين كلمة مرور للحساب',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _changePassword,
                     ),
@@ -322,6 +352,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     ListTile(
                       leading: const Icon(Icons.speed_outlined),
                       title: const Text('فحص سرعة الاتصال بالخادم'),
+                      subtitle: _lastLatencyMs != null
+                          ? Text('آخر فحص: ${_lastLatencyMs}ms')
+                          : null,
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _testConnection,
                     ),
@@ -344,7 +377,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         'تسجيل الخروج من جميع الأجهزة',
                         style: TextStyle(color: Colors.red),
                       ),
-                      onTap: () => widget.session.logout(allDevices: true),
+                      onTap: _confirmLogoutAll,
                     ),
                   ],
                 ),

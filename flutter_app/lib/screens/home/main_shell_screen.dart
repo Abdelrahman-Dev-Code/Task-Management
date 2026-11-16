@@ -18,6 +18,13 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   int _selectedIndex = 0;
 
+  void _onTabSelected(int index) {
+    setState(() => _selectedIndex = index);
+    if (index == 1) {
+      widget.session.refreshUnreadCount();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final unread = widget.session.unreadNotifications;
@@ -32,7 +39,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     Widget notifIcon({required bool selected}) => Badge(
           isLabelVisible: unread > 0,
-          label: Text('$unread'),
+          label: Text(unread > 99 ? '99+' : '$unread'),
           child: Icon(selected ? Icons.notifications : Icons.notifications_outlined),
         );
 
@@ -43,7 +50,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             NavigationRail(
               selectedIndex: _selectedIndex,
               extended: extendedRail,
-              onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+              onDestinationSelected: _onTabSelected,
               leading: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Icon(
@@ -83,7 +90,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: _onTabSelected,
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.check_box_outlined),

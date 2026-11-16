@@ -145,17 +145,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              if (_error != null) ...[
+              if (_error != null || widget.session.sessionExpiredNotice != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: theme.colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
                   ),
                   child: Text(
-                    _error!,
-                    style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                    _error ?? widget.session.sessionExpiredNotice!,
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer, fontSize: 13),
                   ),
                 ),
                 const SizedBox(height: 14),

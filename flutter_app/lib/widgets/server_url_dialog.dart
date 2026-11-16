@@ -4,6 +4,17 @@ import '../services/session_controller.dart';
 
 Future<void> showServerUrlDialog(BuildContext context, SessionController session) async {
   final controller = TextEditingController(text: session.baseUrl);
+
+  Future<void> save(BuildContext ctx) async {
+    await session.updateBaseUrl(controller.text);
+    if (ctx.mounted) {
+      Navigator.of(ctx).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تحديث عنوان الخادم بنجاح')),
+      );
+    }
+  }
+
   await showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -16,6 +27,7 @@ Future<void> showServerUrlDialog(BuildContext context, SessionController session
             TextField(
               controller: controller,
               textDirection: TextDirection.ltr,
+              onSubmitted: (_) => save(ctx),
               decoration: const InputDecoration(
                 labelText: 'Base URL',
                 hintText: 'https://...',
@@ -32,12 +44,16 @@ Future<void> showServerUrlDialog(BuildContext context, SessionController session
                   onPressed: () => controller.text = AppConfig.defaultBaseUrl,
                 ),
                 ActionChip(
-                  label: const Text('محاكي Android'),
-                  onPressed: () => controller.text = 'http://10.0.2.2:3000',
+                  label: const Text('Laravel محلي (Desktop/Web/iOS)'),
+                  onPressed: () => controller.text = 'http://127.0.0.1:8000',
                 ),
                 ActionChip(
-                  label: const Text('Localhost'),
-                  onPressed: () => controller.text = 'http://localhost:3000',
+                  label: const Text('Laravel محاكي Android'),
+                  onPressed: () => controller.text = 'http://10.0.2.2:8000',
+                ),
+                ActionChip(
+                  label: const Text('Localhost (3000)'),
+                  onPressed: () => controller.text = 'http://127.0.0.1:3000',
                 ),
               ],
             ),
@@ -50,18 +66,11 @@ Future<void> showServerUrlDialog(BuildContext context, SessionController session
           child: const Text('إلغاء'),
         ),
         FilledButton(
-          onPressed: () async {
-            await session.updateBaseUrl(controller.text);
-            if (ctx.mounted) {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم تحديث عنوان الخادم بنجاح')),
-              );
-            }
-          },
+          onPressed: () => save(ctx),
           child: const Text('حفظ'),
         ),
       ],
     ),
   );
+  controller.dispose();
 }

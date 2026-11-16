@@ -55,6 +55,26 @@ class TaskModel {
     required this.updatedAt,
   });
 
+  TaskModel copyWith({
+    String? title,
+    String? description,
+    TaskStatus? status,
+    TaskPriority? priority,
+    String? dueDate,
+    String? updatedAt,
+  }) {
+    return TaskModel(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
       id: (json['id'] as num).toInt(),
@@ -66,6 +86,19 @@ class TaskModel {
       createdAt: (json['created_at'] ?? '') as String,
       updatedAt: (json['updated_at'] ?? '') as String,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'status': status.apiValue,
+      'priority': priority.apiValue,
+      'due_date': dueDate,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
   }
 }
 
@@ -92,5 +125,15 @@ class TaskStatsModel {
       completed: (json['completed'] as num? ?? 0).toInt(),
       overdue: (json['overdue'] as num? ?? 0).toInt(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total': total,
+      'pending': pending,
+      'in_progress': inProgress,
+      'completed': completed,
+      'overdue': overdue,
+    };
   }
 }

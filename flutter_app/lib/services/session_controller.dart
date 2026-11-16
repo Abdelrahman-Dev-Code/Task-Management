@@ -19,6 +19,7 @@ class SessionController extends ChangeNotifier {
   bool _initialized = false;
   int _unreadNotifications = 0;
   ThemeMode _themeMode = ThemeMode.system;
+  String? _sessionExpiredNotice;
 
   UserModel? get user => _user;
   bool get isInitialized => _initialized;
@@ -26,8 +27,14 @@ class SessionController extends ChangeNotifier {
   int get unreadNotifications => _unreadNotifications;
   String get baseUrl => apiClient.baseUrl;
   ThemeMode get themeMode => _themeMode;
+  String? get sessionExpiredNotice => _sessionExpiredNotice;
+
+  void clearSessionExpiredNotice() {
+    _sessionExpiredNotice = null;
+  }
 
   Future<void> initialize() async {
+    apiClient.onUnauthorized = _handleUnauthorized;
     await apiClient.init();
     final prefs = await SharedPreferences.getInstance();
     final savedTheme = prefs.getString(_themeKey);
@@ -50,6 +57,16 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _handleUnauthorized() async {
+    if (_user == null) return;
+    await apiClient.setToken(null);
+    await taskService.clearCache();
+    _user = null;
+    _unreadNotifications = 0;
+    _sessionExpiredNotice = 'انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.';
+    notifyListeners();
+  }
+
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
@@ -63,6 +80,7 @@ class SessionController extends ChangeNotifier {
   }
 
   void setAuthenticatedUser(UserModel user) {
+    _sessionExpiredNotice = null;
     _user = user;
     notifyListeners();
     refreshUnreadCount();
@@ -97,8 +115,15 @@ class SessionController extends ChangeNotifier {
 
   Future<void> logout({bool allDevices = false}) async {
     await authService.logout(allDevices: allDevices);
+    await taskService.clearCache();
     _user = null;
     _unreadNotifications = 0;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    apiClient.dispose();
+    super.dispose();
   }
 }

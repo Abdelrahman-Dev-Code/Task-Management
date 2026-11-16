@@ -1,44 +1,70 @@
-# Task Management — Flutter App
+# Task Management — Flutter App (All Platforms)
 
-تطبيق **لوحة المهام** المتكامل بواجهة Flutter متجاوبة (`Mobile / Tablet / Web / Desktop`) ومربوط بالكامل مع خادم **Task Management REST API**.
+تطبيق **لوحة المهام** المتكامل بواجهة Flutter متجاوبة تعمل على **جميع المنصات**:
+- **سطح المكتب**: Windows، macOS، Linux
+- **الجوال**: Android، iOS
+- **الويب**: Chrome / Edge / Safari
+
+---
 
 ## المميزات وتجربة المستخدم (UI/UX)
-- **دعم كامل للعربية (RTL)** مع مظهر **فاتح وداكن وتلقائي (Light / Dark / System)**.
-- **تخطيط متجاوب لجميع الأجهزة**:
-  - شريط تنقل سفلي (`NavigationBar`) على الجوال و`NavigationRail` جانبي على التابلت وسطح المكتب.
+- **دعم كامل للعربية (RTL)** مع الوضع **الفاتح والداكن والتلقائي (Light / Dark / System)**.
+- **تخطيط متجاوب لجميع الشاشات**:
+  - شريط تنقل سفلي (`NavigationBar`) على الجوال و `NavigationRail` جانبي على التابلت وسطح المكتب.
   - عرض المهام في قائمة عمودية على الجوال وشبكة متعددة الأعمدة على الشاشات الكبيرة.
-  - شاشة دخول مقسمة (`Split Layout`) على الشاشات الواسعة.
-- **أداء وسلاسة**:
-  - بحث فوري مع Debounce (`350ms`) لتقليل الطلبات.
-  - تحديث متفائل (Optimistic UI) عند تغيير حالة المهمة مع تراجع تلقائي عند فشل الشبكة.
-  - شاشات تحميل هيكلية (`Skeleton Loader`)، وتفاصيل مهمة كاملة عبر `TaskDetailSheet`.
-  - حقل إدخال رمز OTP مقسّم إلى 6 خانات (`OtpCodeInput`) مع دعم اللصق والتعبئة التلقائية.
-- **المصادقة الكاملة**:
+  - اختصارات لوحة المفاتيح على Windows/macOS/Linux: `Ctrl/Cmd + N` مهمة جديدة، `Ctrl/Cmd + F` بحث، `F5` أو `Ctrl/Cmd + R` تحديث.
+- **سرعة وأداء عالٍ**:
+  - اتصال HTTP دائم (`Keep-Alive`)، تخزين مؤقت فوري عند الفتح (`Cache-First`)، وترقيم مع التمرير اللانهائي (`Pagination`).
+  - تحديث متفائل (`Optimistic UI`) لتغيير الحالة والإشعارات.
+- **المصادقة الكاملة على كل المنصات**:
   - البريد وكلمة المرور + الحساب التجريبي (`ahmed@example.com` / `12345678`).
   - نظام OTP متكامل (تأكيد البريد، الدخول بدون كلمة مرور، استعادة كلمة المرور).
-  - المتابعة باستخدام جوجل (`google_sign_in` -> `POST /api/auth/google`).
-- **إعدادات الحساب**: تعديل الاسم، تغيير كلمة المرور، فحص سرعة الاتصال بالخادم، وتبديل عنوان الخادم من داخل التطبيق.
+  - المتابعة باستخدام جوجل:
+    - على **Android / iOS / Web**: عبر حزمة `google_sign_in`.
+    - على **Windows / macOS / Linux**: عبر تدفق المتصفح الآمن (`Loopback OAuth2`) تلقائياً!
 
-## خطوات التشغيل على جهازك
+---
+
+## خطوات التشغيل على جهازك (Windows / macOS / Linux / Android / iOS / Web)
 1. انتقل إلى مجلد التطبيق:
    ```bash
    cd flutter_app
    ```
-2. أنشئ ملفات المنصات (Android / iOS / Web) دون استبدال `lib/` أو `pubspec.yaml`:
+2. أنشئ مجلدات جميع المنصات دفعة واحدة دون استبدال `lib/` أو `pubspec.yaml`:
    ```bash
-   flutter create . --platforms=android,ios,web
+   flutter create . --platforms=android,ios,web,windows,macos,linux
    ```
-3. ثبّت الحزم وشغّل التطبيق:
+3. ثبّت الحزم:
    ```bash
    flutter pub get
-   flutter run
    ```
-
-## عند إرفاق مفاتيح جوجل لاحقًا
-1. شغّل التطبيق مع تمرير `GOOGLE_CLIENT_ID`:
+4. شغّل التطبيق على المنصة التي تريدها (أو على الخادم السحابي مباشرة دون تغيير):
    ```bash
-   flutter run --dart-define=GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
+   # على Windows
+   flutter run -d windows --dart-define=API_BASE_URL=http://127.0.0.1:8000
+
+   # على macOS
+   flutter run -d macos --dart-define=API_BASE_URL=http://127.0.0.1:8000
+
+   # على Linux
+   flutter run -d linux --dart-define=API_BASE_URL=http://127.0.0.1:8000
+
+   # على الويب (Chrome)
+   flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000
+
+   # على محاكي Android
+   flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
    ```
-2. بالنسبة لـ **Android**: أضف `SHA-1` في Google Cloud / Firebase Console.
-3. بالنسبة لـ **iOS**: أضف `CFBundleURLTypes` (`REVERSED_CLIENT_ID`) في `ios/Runner/Info.plist`.
-4. بالنسبة للخادم: أضف `GOOGLE_CLIENT_ID` و `GOOGLE_CLIENT_SECRET` في `.env` على الخادم.
+   *(ملاحظة مهمة لنظام **macOS**: بعد تشغيل `flutter create`، أضف `<key>com.apple.security.network.client</key><true/>` داخل ملفَي `macos/Runner/DebugProfile.entitlements` و `macos/Runner/Release.entitlements` للسماح للاتصالات الشبكية).*
+
+---
+
+## التصدير للإنتاج (Build)
+```bash
+flutter build windows      # مجلد .exe على Windows
+flutter build macos        # تطبيق .app على Mac
+flutter build linux        # حزمة Linux
+flutter build apk          # تطبيق Android
+flutter build ios          # تطبيق iOS
+flutter build web          # نسخة الويب
+```

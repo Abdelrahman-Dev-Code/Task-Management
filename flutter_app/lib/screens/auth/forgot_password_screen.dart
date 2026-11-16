@@ -16,6 +16,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _codeSent = false;
+  bool _obscurePassword = true;
   bool _loading = false;
   String? _error;
   String? _devOtp;
@@ -91,6 +92,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('استعادة كلمة المرور')),
       body: SafeArea(
@@ -100,13 +103,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -119,11 +117,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: scheme.errorContainer,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.shade200),
                           ),
-                          child: Text(_error!, style: TextStyle(color: Colors.red.shade800)),
+                          child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -135,22 +132,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         decoration: const InputDecoration(
                           labelText: 'البريد الإلكتروني',
                           prefixIcon: Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(),
                         ),
                       ),
                       if (_codeSent) ...[
                         const SizedBox(height: 14),
                         if (_devOtp != null) ...[
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.indigo.shade50,
+                              color: scheme.primaryContainer,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Dev OTP: $_devOtp'),
+                                Text(
+                                  'رمز التطوير: $_devOtp',
+                                  style: TextStyle(
+                                    color: scheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 TextButton(
                                   onPressed: () => _otpController.text = _devOtp!,
                                   child: const Text('تعبئة'),
@@ -170,18 +172,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             counterText: '',
                             labelText: 'رمز التحقق (6 أرقام)',
                             prefixIcon: Icon(Icons.pin_outlined),
-                            border: OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 14),
                         TextField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           textDirection: TextDirection.ltr,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'كلمة المرور الجديدة',
-                            prefixIcon: Icon(Icons.lock_outline),
-                            border: OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            ),
                           ),
                         ),
                       ],
